@@ -1,0 +1,769 @@
+---
+title: "meta work"
+author: "Caroline Gao & dante & Huangweiwei"
+date: "2022/12/3"
+output: html_document
+---
+
+```{r}
+``{r}
+library(litsearchr)
+library(tidyverse)
+library(magrittr)
+library(revtools)
+library(tidytext)
+library(dplyr)
+library(shiny)
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(devtools)
+library(usethis)
+library(data.table)
+```
+```
+#WOS-ris-数据库导入
+```{r}
+naive_results_WOS1 <- import_results(directory = "C:/Users/hww03/Desktop/7788/新冠暴发地检索/literature database/wos",file=NULL) 
+dim(naive_results_WOS1)
+naive_results_WOS2 <- import_results(directory = "C:/Users/hww03/Desktop/7788/新冠暴发地检索/literature database/wos_g",file=NULL) 
+dim(naive_results_WOS2)
+naive_results_WOS3 <- import_results(directory = "C:/Users/hww03/Desktop/7788/新冠暴发地检索/literature database/wos_v",file=NULL) 
+dim(naive_results_WOS3)
+```
+#WOS-查找重复title的名字-一般不需要开启
+```{r}
+naive_results_WOS$title[duplicated(naive_results_WOS$title)]
+```
+
+#WOS-降重
+```{r}
+naive_results_WOS1<- naive_results_WOS1%>%
+  distinct(title,.keep_all = TRUE)%>%
+  distinct(accession_number,.keep_all = TRUE)
+dim(naive_results_WOS1)
+
+naive_results_WOS2<- naive_results_WOS2%>%
+  distinct(title,.keep_all = TRUE)%>%
+  distinct(accession_number,.keep_all = TRUE)
+dim(naive_results_WOS2)
+
+naive_results_WOS3<- naive_results_WOS3%>%
+  distinct(title,.keep_all = TRUE)%>%
+  distinct(accession_number,.keep_all = TRUE)
+dim(naive_results_WOS3)
+```
+#WOS-格式预处理
+```{r}
+# extract usefull variables 
+naive_results_WOS1<-naive_results_WOS1%>% 
+    select(author,date_published,title,source,abstract,doi) %>% 
+    mutate(DOI= paste0("http://doi.org/",str_remove(doi, " \\[doi\\]"))) %>%
+  select(-doi)
+  
+#give a ID 
+naive_results_WOS1$ID<-1:nrow(naive_results_WOS1)
+names(naive_results_WOS1)[names(naive_results_WOS1) == 'source'] <- 'journal'
+names(naive_results_WOS1)[names(naive_results_WOS1) == 'date_generated'] <- 'date_published'
+
+naive_results_WOS2<-naive_results_WOS2%>% 
+    select(author,date_published,title,source,abstract,doi) %>% 
+    mutate(DOI= paste0("http://doi.org/",str_remove(doi, " \\[doi\\]"))) %>%
+  select(-doi)
+  
+#give a ID 
+naive_results_WOS2$ID<-1:nrow(naive_results_WOS2)
+names(naive_results_WOS2)[names(naive_results_WOS2) == 'source'] <- 'journal'
+names(naive_results_WOS2)[names(naive_results_WOS2) == 'date_generated'] <- 'date_published'
+
+naive_results_WOS3<-naive_results_WOS3%>% 
+    select(author,date_published,title,source,abstract,doi) %>% 
+    mutate(DOI= paste0("http://doi.org/",str_remove(doi, " \\[doi\\]"))) %>%
+  select(-doi)
+  
+#give a ID 
+naive_results_WOS3$ID<-1:nrow(naive_results_WOS3)
+names(naive_results_WOS3)[names(naive_results_WOS3) == 'source'] <- 'journal'
+names(naive_results_WOS3)[names(naive_results_WOS3) == 'date_generated'] <- 'date_published'
+
+naive_results_WOS<-rbind(naive_results_WOS1,naive_results_WOS2,naive_results_WOS3) 
+dim(naive_results_WOS)
+naive_results_WOS$title[duplicated(naive_results_WOS$title)]
+dim(naive_results_WOS)
+naive_results_WOS <- naive_results_WOS%>%
+  distinct(title,author,.keep_all = TRUE) %>%
+  distinct(title,DOI,.keep_all = TRUE) %>%
+  distinct(author,DOI,.keep_all = TRUE) 
+dim(naive_results_WOS)
+```
+#scopus,ris-库导入&降重
+```{r}
+naive_results_Scopus1 <- import_results(directory = "C:/Users/hww03/Desktop/7788/新冠暴发地检索/literature database/sc",file=NULL) 
+dim(naive_results_Scopus1)
+naive_results_Scopus2 <- import_results(directory = "C:/Users/hww03/Desktop/7788/新冠暴发地检索/literature database/scop_g",file=NULL) 
+dim(naive_results_Scopus2)
+naive_results_Scopus3 <- import_results(directory = "C:/Users/hww03/Desktop/7788/新冠暴发地检索/literature database/scop_v",file=NULL) 
+dim(naive_results_Scopus3)
+
+#remove duplicated records
+```
+```{r}
+naive_results_Scopus1 <- naive_results_Scopus1%>%
+  distinct(title,.keep_all = TRUE)%>%
+  distinct(doi,.keep_all = TRUE)
+dim(naive_results_Scopus1)
+naive_results_Scopus2 <- naive_results_Scopus2%>%
+  distinct(title,.keep_all = TRUE)%>%
+  distinct(doi,.keep_all = TRUE)
+dim(naive_results_Scopus2)
+naive_results_Scopus3 <- naive_results_Scopus3%>%
+  distinct(title,.keep_all = TRUE)%>%
+  distinct(doi,.keep_all = TRUE)
+dim(naive_results_Scopus3)
+```
+
+#scopus，ris格式预处理
+```{r}
+# extract usefull variables 
+naive_results_Scopus1<-naive_results_Scopus1%>% 
+    select(author,year,title,source,abstract,doi) %>% 
+    mutate(DOI= paste0("http://doi.org/",str_remove(doi, " \\[doi\\]"))) %>% 
+    select(-doi)
+
+#give a ID 
+naive_results_Scopus1$ID<-1:nrow(naive_results_Scopus1)
+names(naive_results_Scopus1)[names(naive_results_Scopus1) == 'source'] <- 'journal'
+names(naive_results_Scopus1)[names(naive_results_Scopus1) == 'year'] <- 'date_published'
+
+naive_results_Scopus2<-naive_results_Scopus2%>% 
+    select(author,year,title,source,abstract,doi) %>% 
+    mutate(DOI= paste0("http://doi.org/",str_remove(doi, " \\[doi\\]"))) %>% 
+    select(-doi)
+
+#give a ID 
+naive_results_Scopus2$ID<-1:nrow(naive_results_Scopus2)
+names(naive_results_Scopus2)[names(naive_results_Scopus2) == 'source'] <- 'journal'
+names(naive_results_Scopus2)[names(naive_results_Scopus2) == 'year'] <- 'date_published'
+
+naive_results_Scopus3<-naive_results_Scopus3%>% 
+    select(author,year,title,source,abstract,doi) %>% 
+    mutate(DOI= paste0("http://doi.org/",str_remove(doi, " \\[doi\\]"))) %>% 
+    select(-doi)
+
+#give a ID 
+naive_results_Scopus3$ID<-1:nrow(naive_results_Scopus3)
+names(naive_results_Scopus3)[names(naive_results_Scopus3) == 'source'] <- 'journal'
+names(naive_results_Scopus3)[names(naive_results_Scopus3) == 'year'] <- 'date_published'
+
+naive_results_Scopus<-rbind(naive_results_Scopus1,naive_results_Scopus2,naive_results_Scopus3) 
+dim(naive_results_Scopus)
+naive_results_Scopus$title[duplicated(naive_results_Scopus$title)]
+dim(naive_results_Scopus)
+naive_results_Scopus <- naive_results_Scopus%>%
+  distinct(title,author,.keep_all = TRUE) %>%
+  distinct(title,DOI,.keep_all = TRUE) %>%
+  distinct(author,DOI,.keep_all = TRUE) 
+dim(naive_results_Scopus)
+```
+#导入pubmed1,text
+```{r}
+naive_results_Pubmed1 <- import_results(directory = "C:/Users/hww03/Desktop/7788/新冠暴发地检索/literature database/pub1",file=NULL) 
+dim(naive_results_Pubmed1)
+naive_results_Pubmed2 <- import_results(directory = "C:/Users/hww03/Desktop/7788/新冠暴发地检索/literature database/pub_g",file=NULL) 
+dim(naive_results_Pubmed2)
+naive_results_Pubmed3 <- import_results(directory = "C:/Users/hww03/Desktop/7788/新冠暴发地检索/literature database/pub_v",file=NULL) 
+dim(naive_results_Pubmed3)
+```
+#pubmed1 降重
+```{r}
+naive_results_Pubmed1 <- naive_results_Pubmed1%>%
+  distinct(title,.keep_all = TRUE)%>%
+  distinct(pubmed_id,.keep_all = TRUE)
+dim(naive_results_Pubmed1)
+naive_results_Pubmed2 <- naive_results_Pubmed2%>%
+  distinct(title,.keep_all = TRUE)%>%
+  distinct(pubmed_id,.keep_all = TRUE)
+dim(naive_results_Pubmed2)
+naive_results_Pubmed3 <- naive_results_Pubmed3%>%
+  distinct(title,.keep_all = TRUE)%>%
+  distinct(pubmed_id,.keep_all = TRUE)
+dim(naive_results_Pubmed3)
+```
+
+#pubmed,text 格式预处理
+```{r}
+# extract usefull variables 
+naive_results_Pubmed1<-naive_results_Pubmed1%>% 
+    select(author_full,date_published,title,journal,abstract,location_id) %>% 
+    separate(location_id, c("doi1","doi2","doi3"),
+              sep = " and ") %>% 
+    mutate(DOI=ifelse(str_detect(doi1,"doi"),doi1,doi2)) %>% 
+    mutate(DOI= paste0("http://doi.org/",str_remove(DOI, " \\[doi\\]"))) %>% 
+    select(-doi1,-doi2,-doi3)
+
+#give a ID 
+naive_results_Pubmed1$ID<-1:nrow(naive_results_Pubmed1)
+names(naive_results_Pubmed1)[names(naive_results_Pubmed1) == 'author_full'] <- 'author'
+names(naive_results_Pubmed1)[names(naive_results_Pubmed1) == 'location_id'] <- 'DOI'
+
+naive_results_Pubmed2<-naive_results_Pubmed2%>% 
+    select(author_full,date_published,title,journal,abstract,location_id) %>% 
+    separate(location_id, c("doi1","doi2","doi3"),
+              sep = " and ") %>% 
+    mutate(DOI=ifelse(str_detect(doi1,"doi"),doi1,doi2)) %>% 
+    mutate(DOI= paste0("http://doi.org/",str_remove(DOI, " \\[doi\\]"))) %>% 
+    select(-doi1,-doi2,-doi3)
+
+#give a ID 
+naive_results_Pubmed2$ID<-1:nrow(naive_results_Pubmed2)
+names(naive_results_Pubmed2)[names(naive_results_Pubmed2) == 'author_full'] <- 'author'
+names(naive_results_Pubmed2)[names(naive_results_Pubmed2) == 'location_id'] <- 'DOI'
+
+naive_results_Pubmed3<-naive_results_Pubmed3%>% 
+    select(author_full,date_published,title,journal,abstract,location_id) %>% 
+    separate(location_id, c("doi1","doi2","doi3"),
+              sep = " and ") %>% 
+    mutate(DOI=ifelse(str_detect(doi1,"doi"),doi1,doi2)) %>% 
+    mutate(DOI= paste0("http://doi.org/",str_remove(DOI, " \\[doi\\]"))) %>% 
+    select(-doi1,-doi2,-doi3)
+
+#give a ID 
+naive_results_Pubmed3$ID<-1:nrow(naive_results_Pubmed3)
+names(naive_results_Pubmed3)[names(naive_results_Pubmed3) == 'author_full'] <- 'author'
+names(naive_results_Pubmed3)[names(naive_results_Pubmed3) == 'location_id'] <- 'DOI'
+
+naive_results_Pubmed<-rbind(naive_results_Pubmed1,naive_results_Pubmed2,naive_results_Pubmed3) 
+dim(naive_results_Pubmed)
+naive_results_Pubmed$title[duplicated(naive_results_Pubmed$title)]
+dim(naive_results_Pubmed)
+naive_results_Pubmed <- naive_results_Pubmed%>%
+  distinct(title,author,.keep_all = TRUE) %>%
+  distinct(title,DOI,.keep_all = TRUE) %>%
+  distinct(author,DOI,.keep_all = TRUE) 
+dim(naive_results_Pubmed)
+```
+
+#el导入
+```{r}
+naive_results_el1 <- import_results(directory = "C:/Users/hww03/Desktop/7788/新冠暴发地检索/literature database/el",file=NULL) 
+dim(naive_results_el1)
+naive_results_el2 <- import_results(directory = "C:/Users/hww03/Desktop/7788/新冠暴发地检索/literature database/el_g",file=NULL) 
+dim(naive_results_el2)
+naive_results_el3 <- import_results(directory = "C:/Users/hww03/Desktop/7788/新冠暴发地检索/literature database/el_v",file=NULL) 
+dim(naive_results_el3)
+#remove duplicated records
+```
+#el降重
+```{r}
+naive_results_el1 <- naive_results_el1%>%
+  distinct(title,.keep_all = TRUE)%>%
+  distinct(doi,.keep_all = TRUE)
+dim(naive_results_el1)
+
+naive_results_el2 <- naive_results_el2%>%
+  distinct(title,.keep_all = TRUE)%>%
+  distinct(doi,.keep_all = TRUE)
+dim(naive_results_el2)
+
+naive_results_el3 <- naive_results_el3%>%
+  distinct(title,.keep_all = TRUE)%>%
+  distinct(doi,.keep_all = TRUE)
+dim(naive_results_el3)
+
+```
+#el预处理
+```{r}
+# extract usefull variables 
+naive_results_el1<-naive_results_el1%>% 
+    select(author,year,title,journal,abstract,doi) %>% 
+    mutate(DOI= paste0("http://doi.org/",str_remove(doi, " \\[doi\\]"))) %>% 
+    select(-doi)
+
+#give a ID 
+naive_results_el1$ID<-1:nrow(naive_results_el1)
+names(naive_results_el1)[names(naive_results_el1) == 'year'] <- 'date_published'
+names(naive_results_el1)[names(naive_results_el1) == 'doi'] <- 'DOI'
+
+# extract usefull variables 
+naive_results_el2<-naive_results_el2%>% 
+    select(author,year,title,journal,abstract,doi) %>% 
+    mutate(DOI= paste0("http://doi.org/",str_remove(doi, " \\[doi\\]"))) %>% 
+    select(-doi)
+
+#give a ID 
+naive_results_el2$ID<-1:nrow(naive_results_el2)
+names(naive_results_el2)[names(naive_results_el2) == 'year'] <- 'date_published'
+names(naive_results_el2)[names(naive_results_el2) == 'doi'] <- 'DOI'
+
+# extract usefull variables 
+naive_results_el3<-naive_results_el3%>% 
+    select(author,year,title,journal,abstract,doi) %>% 
+    mutate(DOI= paste0("http://doi.org/",str_remove(doi, " \\[doi\\]"))) %>% 
+    select(-doi)
+
+#give a ID 
+naive_results_el3$ID<-1:nrow(naive_results_el3)
+names(naive_results_el3)[names(naive_results_el3) == 'year'] <- 'date_published'
+names(naive_results_el3)[names(naive_results_el3) == 'doi'] <- 'DOI'
+
+naive_results_el<-rbind(naive_results_el1,naive_results_el2,naive_results_el3) 
+dim(naive_results_el)
+naive_results_el$title[duplicated(naive_results_el$title)]
+dim(naive_results_el)
+naive_results_el <- naive_results_el%>%
+  distinct(title,author,.keep_all = TRUE) %>%
+  distinct(title,DOI,.keep_all = TRUE) %>%
+  distinct(author,DOI,.keep_all = TRUE) 
+dim(naive_results_el)
+```
+
+
+#不同库合并&降重
+```{r}
+naive_results<-rbind(naive_results_WOS,naive_results_Scopus,naive_results_Pubmed,naive_results_el) 
+
+naive_results$title[duplicated(naive_results$title)]
+dim(naive_results)
+naive_results <- naive_results%>%
+  distinct(title,author,.keep_all = TRUE) %>%
+  distinct(title,DOI,.keep_all = TRUE) %>%
+  distinct(author,DOI,.keep_all = TRUE) 
+dim(naive_results)
+             
+```
+#关键词ID排布
+```{r}
+my_text<- tibble(ID = naive_results$ID, text = paste(naive_results$title,  
+                                                        naive_results$abstract))
+
+```
+#关键词设置-以下通用
+```{r}
+# define words that are potentially related to clustering 
+list<-c("airplane","bus","taxi","subway","railway station","train","airport","metro","bus stop","cluster")
+
+# extract single word tokens
+words<-my_text %>% 
+  group_by(ID) %>%
+  unnest_tokens(word, text)  %>% 
+  filter(!word %in% stop_words$word) %>% 
+  group_by(word) %>% 
+  mutate(n=n()) %>% 
+  filter(word  %in% list ) 
+```
+## 2-gram
+Next we extract all tokens with two words.
+```{r}
+bigram<-my_text %>% 
+  group_by(ID) %>%
+  unnest_tokens(word, text ,token = "ngrams", n = 2)  %>% 
+  separate(word, into = c("word1", "word2"), sep = " ") %>% 
+  filter(!word1 %in% stop_words$word,
+          !word2 %in% stop_words$word) %>%
+  unite(word, c(word1, word2), sep = " ") %>% 
+  group_by(word) %>% 
+  mutate(n=n()) %>% 
+  filter(n>100)
+  
+```
+## 3-gram
+Last we extract all tokens with three words.
+```{r}
+
+trgram<-my_text %>% 
+  group_by(ID) %>%
+  unnest_tokens(word, text ,token = "ngrams", n = 3)  %>% 
+  separate(word, into = c("word1", "word2","word3"), sep = " ") %>% 
+  filter(!word1 %in% stop_words$word,
+          !word2 %in% stop_words$word,
+          !word3 %in% stop_words$word) %>%
+  unite(word, c(word1, word2, word3 ), sep = " ") %>% 
+  group_by(word) %>% 
+  mutate(n=n())  %>% 
+  filter(n>100)
+  
+```
+```{r}
+ngram<-rbind(words,bigram,trgram) %>% 
+  select(-ID) %>% 
+  distinct() %>% 
+  arrange(n)
+ngram$word
+list<-c("airplane","bus","taxi","subway","railway station","train","airport","metro","bus stop","cluster","air transport","public transport")
+
+```
+#Identify frequency of keywords included in individual paper. 
+```{r}
+clustering<-rbind(words,bigram,trgram) %>% 
+  mutate(clustering_all=ifelse(word %in% list,1,0)) %>% 
+  group_by(ID) %>% 
+  summarise(clustering_all=sum(clustering_all)) 
+
+naive_results<-naive_results %>% 
+  left_join(clustering)
+
+dim(naive_results)
+```
+#Manually reviewed and used number of keywords showed up for five times or more as an indicator possible clustering paper
+```{r}
+naive_results3<-filter(naive_results,(clustering_all>=3))
+dim(naive_results3)
+```
+#Extraneous word exclusion in title and abs
+```{r}
+list1 <- c("model","forecast","predict","mental","psychological","potential","design","comorbidity","virtual")
+extra_word <- my_text %>%
+  group_by(ID) %>%
+  unnest_tokens(word, text)  %>% 
+  filter(!word %in% stop_words$word) %>% 
+  group_by(word) %>% 
+  mutate(n=n()) %>% 
+  filter(word  %in% list1)
+
+ngram2<-rbind(extra_word,bigram,trgram) %>% 
+  select(-ID) %>% 
+  distinct() %>% 
+  arrange(n)
+ngram2$word
+list1 <- c("belief model","forecast","predict","mental","psychological","potential","design","cell","recovery period","animal models","virtual","home quarantine","model based","anxiety scale")
+
+clustering2<-rbind(extra_word,bigram,trgram) %>% 
+  mutate(clustering_all2=ifelse(word %in% list1,1,0)) %>% 
+  group_by(ID) %>% 
+  summarise(clustering_all2=sum(clustering_all2)) 
+
+naive_results3<-naive_results3 %>% 
+  left_join(clustering2)
+dim(naive_results3)
+
+naive_results3$clustering_all2[is.na(naive_results3$clustering_all2)] <- 0
+naive_results4 <- filter(naive_results3, clustering_all2==0)
+dim(naive_results4)
+```
+#Extraneous word exclusion in title
+```{r}
+list2 <- c("impact","management","policy","strategies","sleep quality","effect","outcome","qualitative study","measures","comorbidity","prevention","virtual","associated with")
+my_title<- tibble(ID = naive_results$ID, text = paste(naive_results$title))
+extra_word_ti <- my_title %>%
+  group_by(ID) %>%
+  unnest_tokens(word, text)  %>% 
+  filter(!word %in% stop_words$word) %>% 
+  group_by(word) %>% 
+  mutate(n=n()) %>% 
+  filter(word  %in% list2)
+
+ngram2_ti<-extra_word_ti %>% 
+  select(-ID) %>% 
+  distinct() %>% 
+  arrange(n)
+ngram2_ti$word
+
+clustering2_ti<-rbind(extra_word_ti) %>% 
+  mutate(clustering_all2_ti=ifelse(word %in% list2,1,0)) %>% 
+  group_by(ID) %>% 
+  summarise(clustering_all2_ti=sum(clustering_all2_ti)) 
+
+naive_results4<-naive_results4 %>% 
+  left_join(clustering2_ti)
+dim(naive_results4)
+
+naive_results4$clustering_all2_ti[is.na(naive_results4$clustering_all2_ti)] <- 0
+naive_results5 <- filter(naive_results4, clustering_all2_ti==0)
+dim(naive_results5)
+```
+
+#Next we look at a list of journals published most of papers potentially related to clustering.
+```{r}
+Journals<-naive_results %>% 
+    group_by(journal) %>% 
+    tally() %>% 
+    na.omit() %>% 
+    arrange(desc(n))
+nrow(Journals)
+head(Journals,20)
+```
+
+#Here we choose to evaluate papers published in a few journals (broader scope mental health journals with an impact factor of 3 or above). 
+```{r}
+journals<-c( "Journal of affective disorders",
+             "Frontiers in psychiatry",
+             "BMC psychiatry",
+             "Psychological medicine",
+             "Journal of psychiatric research",
+             "Frontiers in psychology")
+
+naive_selected<-naive_results %>% 
+    filter(journal %in% journals)
+dim(naive_selected)
+```
+
+# txt_WOS
+```{r}
+data0 <- read_bibliography("C:/Users/hww03/Desktop/7788/新冠暴发地检索/special vehicle/wos/savedrecs.txt")
+data1 <- read_bibliography("C:/Users/hww03/Desktop/7788/新冠暴发地检索/special vehicle/wos/savedrecs (1).txt")
+data_all1 <- data.frame()
+for (i in 0:1){
+  df <-get(paste0("data",i))
+  data_all1 <- bind_rows(data_all1, df)
+}
+matches1 <- find_duplicates(data_all1, match_variable = "title") 
+screen1 <- extract_unique_references(data_all1, matches1) 
+screen1 <- filter(screen1, title %in% naive_results3$title)
+dim(screen1)
+screen_abstracts(screen1)#1
+```
+
+#el(done)
+```{r}
+data_el_1 <- read_bibliography("C:/Users/hww03/Desktop/7788/新冠暴发地检索/literature database/el/1.bib")
+#data_el_2 <- read_bibliography("C:/Users/hww03/Desktop/7788/新冠暴发地检索/special vehicle/el/ScienceDirect_citations_1647858930567.bib")
+#data_el_3 <- read_bibliography("C:/Users/hww03/Desktop/7788/新冠暴发地检索/special vehicle/el/ScienceDirect_citations_1647858946224.bib")
+
+data_all2 <- data.frame()
+for (i in 1:3){
+  df <-get(paste0("data_el_",i))
+  data_all2 <- bind_rows(data_all2, df)
+}
+matches2 <- find_duplicates(data_el_1, match_variable = "title") 
+screen2 <- extract_unique_references(data_el_1, matches2) 
+#screen 
+#screen=naive_results_WOS
+screen2<-filter(screen2, title %in% naive_results3$title)
+dim(screen2)
+screen_abstracts(screen2)
+screen_topics(screen2)
+```
+#scopus
+```{r}
+data_sc_1 <- read_bibliography("C:/Users/hww03/Desktop/7788/新冠暴发地检索/special vehicle/scop/scopus.bib")
+
+matches3 <- find_duplicates(data_sc_1, match_variable = "title") 
+screen3 <- extract_unique_references(data_sc_1, matches3) 
+screen3 <- filter(screen3, title %in% naive_results3$title)
+dim(screen3)
+screen_abstracts(screen3)
+screen_topics(screen3)
+```
+#pubmed
+```{r}
+data_pub_1 <- read_bibliography("C:/Users/hww03/Desktop/7788/新冠暴发地检索/special vehicle/pub/pubmed-covid19AND-set (1).nbib")
+matches_pub_1 <- find_duplicates(data_pub_1, match_variable = "title") 
+screen_pub_1 <- extract_unique_references(data_pub_1, matches_pub_1) 
+screen_pub_1<-filter(screen_pub_1, title %in% naive_results3$title)
+dim(screen_pub_1)
+#screen_abstracts(screen_pub_1)
+
+data_pub_2 <- read_bibliography("C:/Users/hww03/Desktop/7788/新冠暴发地检索/special vehicle/pub/pubmed-covid19AND-set (2).nbib")
+matches_pub_2 <- find_duplicates(data_pub_2, match_variable = "title") 
+screen_pub_2 <- extract_unique_references(data_pub_2, matches_pub_2) 
+screen_pub_2<-filter(screen_pub_2, title %in% naive_results3$title)
+dim(screen_pub_2)
+#screen_abstracts(screen_pub_2)
+
+data_pub_3 <- read_bibliography("C:/Users/hww03/Desktop/7788/新冠暴发地检索/special vehicle/pub/pubmed-covid19AND-set.nbib")
+matches_pub_3 <- find_duplicates(data_pub_3, match_variable = "title") 
+screen_pub_3 <- extract_unique_references(data_pub_3, matches_pub_3) 
+screen_pub_3<-filter(screen_pub_3, title %in% naive_results3$title)
+dim(screen_pub_3)
+#screen_abstracts(screen_pub_3)
+
+screen0 <- data.frame()
+for (i in 1:3){
+  df<-get(paste0("screen_pub_",i))
+  screen0<-bind_rows(screen0,df)
+}
+matches_screen0 <- find_duplicates(screen0, match_variable = "title") 
+screen_screen0 <- extract_unique_references(screen0, matches_screen0)
+dim(screen_screen0)
+screen_abstracts(screen_screen0)
+```
+
+
+#挑一下人工选出来的
+```{r}
+screened1<-read_csv(here::here("vehicle-selected-el.csv"))
+screened2<-read_csv(here::here("vehicle-selected-wos.csv"))
+screened3<-read_csv(here::here("vehicle-selected-scopus.csv"))
+screened4<-read_csv(here::here("vehicle-selected-pubmed.csv"))
+
+
+screened1<-screened1%>% 
+    filter(screened1$screened_abstracts =='selected')
+screened2<-screened2%>% 
+    filter(screened2$screened_abstracts =='selected')
+screened3<-screened3%>% 
+    filter(screened3$screened_abstracts =='selected')
+screened4<-screened4%>% 
+    filter(screened4$screened_abstracts =='selected')
+
+```
+
+```{r}
+Full_text1<-naive_results3 %>% 
+    filter(title %in% screened1$title) %>% 
+    mutate(year=substr(date_published,1,4)) %>% 
+    mutate(ID=paste(gsub( " .*$", "", author ), year)) %>% 
+    mutate(DOI_noweb=str_replace(DOI, "http://doi.org/", "")) %>% 
+    group_by(ID) %>% 
+    mutate(n=seq(n()),N=n()) %>% 
+    mutate(ID=ifelse(N==1,ID, paste0(ID,letters[n]))) %>% 
+    select(ID,title,DOI, author,year,journal, abstract)  
+Full_text2<-naive_results3 %>% 
+    filter(title %in% screened2$title) %>% 
+    mutate(year=substr(date_published,1,4)) %>% 
+    mutate(ID=paste(gsub( " .*$", "", author ), year)) %>% 
+    mutate(DOI_noweb=str_replace(DOI, "http://doi.org/", "")) %>% 
+    group_by(ID) %>% 
+    mutate(n=seq(n()),N=n()) %>% 
+    mutate(ID=ifelse(N==1,ID, paste0(ID,letters[n]))) %>% 
+    select(ID,title,DOI, author,year,journal, abstract)  
+Full_text3<-naive_results3 %>% 
+    filter(title %in% screened3$title) %>% 
+    mutate(year=substr(date_published,1,4)) %>% 
+    mutate(ID=paste(gsub( " .*$", "", author ), year)) %>% 
+    mutate(DOI_noweb=str_replace(DOI, "http://doi.org/", "")) %>% 
+    group_by(ID) %>% 
+    mutate(n=seq(n()),N=n()) %>% 
+    mutate(ID=ifelse(N==1,ID, paste0(ID,letters[n]))) %>% 
+    select(ID,title,DOI, author,year,journal, abstract)  
+Full_text4<-naive_results3 %>% 
+    filter(title %in% screened4$title) %>% 
+    mutate(year=substr(date_published,1,4)) %>% 
+    mutate(ID=paste(gsub( " .*$", "", author ), year)) %>% 
+    mutate(DOI_noweb=str_replace(DOI, "http://doi.org/", "")) %>% 
+    group_by(ID) %>% 
+    mutate(n=seq(n()),N=n()) %>% 
+    mutate(ID=ifelse(N==1,ID, paste0(ID,letters[n]))) %>% 
+    select(ID,title,DOI, author,year,journal, abstract)  
+ 
+Full_text<-rbind(Full_text1,Full_text2,Full_text3,Full_text4) 
+#naive_results$title[duplicated(naive_results$title)]
+dim(Full_text)
+Full_text<- Full_text%>%
+  distinct(title,author,.keep_all = TRUE) 
+dim(Full_text)
+```
+
+# Save file for manual review 
+
+```{r}
+write_csv(Full_text,"Full_text_review_vehicle.csv")
+```
+
+
+```{r}
+library(bib2df)
+save<-Full_text %>% 
+   mutate(author=author) %>% 
+   select(title,author, journal,year,DOI,ID) %>% 
+   mutate(ID=str_replace_all(ID, " ", "_")) %>% 
+   mutate(CATEGORY="ARTICLE") %>% 
+   rename(BIBTEXKEY=ID)
+
+names(save)=toupper(names(save))
+df2bib(save, file = "saved.bib")
+```
+
+#the rest
+```{r}
+screen <- data.frame()
+for (i in 2:3){
+  df<-get(paste0("screen",i))
+  screen<-bind_rows(screen,df)
+}
+dim(screen)
+screen_sel_anti <- filter(naive_results4, !(title %in% screen$title))
+screen_sel_anti_ <- tibble(ID = screen_sel_anti$ID, title = screen_sel_anti$title, abstract = screen_sel_anti$abstract)
+screen_sel_anti_<- screen_sel_anti_ %>%
+  distinct(title,.keep_all = TRUE) 
+dim(screen_sel_anti_)
+write_csv(screen_sel_anti_,"screen_sel_anti2_.csv")
+```
+
+```{r}
+#单个率meta分析
+install.packages("ggpubr")
+library(ggpubr)
+library(dplyr)
+library(forestplot)
+install.packages("reader")
+library(reader)
+library(meta)
+library(GOplot)
+library(ggplot2)
+library(metafor)
+my_data2<-read.csv("C:/Users/hww03/Desktop/7788/新冠暴发地检索/做图数据/allincluded1021.csv")
+
+#秩和检验
+wilcox.test(TE~Close.contact.or.objects.exchange,data=my_data2,var.equal=TRUE,exact=FALSE)
+
+#正态性检验
+rate<-transform(my_data2,p=TE)
+shapiro.test(rate$p)#不服从正态
+rate<-transform(my_data2,log=log(TE))
+shapiro.test(rate$log)#不服从正态
+rate<-transform(my_data2,logit=log((TE)/(1-TE)))
+shapiro.test(rate$logit)#接近正态分布，采用logit转换
+rate<-transform(my_data2,p=0.5*(asin(sqrt(case/(sample.size+1)))+asin((sqrt(case+1)/(sample.size+1)))))
+shapiro.test(rate$p)
+rate<-transform(my_data2,p=asin(sqrt(case/(sample.size+1))))
+shapiro.test(rate$p)
+
+MetaTE<-metaprop(case,
+                 sample.size,
+                 data=my_data2,
+                 studlab = paste(my_data2$锘緼uthor),
+                 sm="PLOGIT",
+                 fixed = F,
+                 random=T,
+                 #subgroup = my_data2$Close.contact.or.objects.exchange,
+                 incr=0.5,
+                 allincr=TRUE,
+                 addincr=FALSE)
+
+#漏斗图
+meta1<-trimfill(MetaTE)
+funnel(meta1,contour=c(0.90,0.95,0.99),col.contour=c("darkgray","gray","lightgray"),ref=0.2452726,cex = 3)
+funnel(MetaTE,contour=c(0.90,0.95,0.99),col.contour=c("darkgray","gray","lightgray"),ref=-0.9262034,cex = 3)
+
+#egger's检验
+metabias(MetaTE,method.bias = "linreg")
+
+#森林图
+forest(MetaTE,
+       xlab="attack rate(95%CI)",
+       xlab.pos=0.6,
+       print.byvar= TRUE,
+       label.events="Cases",
+       print.tau2 = TRUE,
+       print.Q=FALSE,
+       test.subgroup = FALSE
+)
+
+#亚组分析图
+subforestp<-read.csv("C:/Users/hww03/Desktop/7788/新冠暴发地检索/做图数据/110302.csv",header = F,sep = ",",encoding = 'UTF-8')
+forestplot(labeltext = as.matrix(subforestp[,1:5]),
+           mean = subforestp$V7, #设置均值
+           lower = subforestp$V8, #设置均值的lowlimits限
+           upper = subforestp$V9, #设置均值的uplimits限
+           is.summary=c(F,F,T,F,T,F,F,F,T,F,F,F,T,F,F,F,T,F,F,F),
+           zero = 0.28, #设置参照值，此处我们展示的是HR值，故参照值是1，而不是0
+           boxsize = 0.5, #设置点估计的方形大小
+           lineheight = unit(10,'mm'),#设置图形中的行距
+           colgap = unit(10,'mm'),#设置图形中的列间距
+           lwd.zero = 2,#设置参考线的粗细
+           lwd.ci = 2,#设置区间估计线的粗细
+           col=fpColors(box='#A9A9A9',summary="#CD3333",lines = 'black',zero = '#989898'),
+           txt_gp=fpTxtGp(label=gpar(cex=1.5), ticks=gpar(cex=1.1), xlab=gpar(cex = 1.5),title=gpar(cex = 1.5)) ,
+           xlab="Attack rate(95%CI)",#设置x轴标签
+           lwd.xaxis=2,#设置X轴线的粗细
+           lty.ci = 1,
+           digits=2,
+           xticks=c(0,0.20,0.40,0.60,0.80,1.00),
+           graph.pos = 4,
+           graphwidth=unit(0.22,"npc")
+)
+#设置森林图的位置，此处设置为4，则出现在第四列
+```
+
+
